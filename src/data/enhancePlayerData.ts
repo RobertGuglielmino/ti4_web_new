@@ -5,6 +5,7 @@ import {
   LawInPlay,
   StrategyCard,
   CardPoolData,
+  TileUnitData,
 } from "./types";
 import {
   calculateTilePositions,
@@ -13,6 +14,8 @@ import {
 import { optimizeFactionColors, RGBColor } from "../utils/colorOptimization";
 import { getColorValues } from "../lookup/colors";
 import { colors } from "./colors";
+import { tileAdjacencies } from "./tileAdjacencies";
+import { getAllEntityPlacementsForTile } from "@/utils/unitPositioning";
 
 export type EnhancedPlayerData = {
   playerData: PlayerData[];
@@ -22,6 +25,8 @@ export type EnhancedPlayerData = {
   calculatedTilePositions: TilePosition[];
   systemIdToPosition: Record<string, string>;
   factionToColor: Record<string, string>;
+  factionControlByTile: Record<string, string>,
+  factionAdjacencyByTile: Record<string, (string | null)[]>,
   colorToFaction: Record<string, string>;
   optimizedColors: Record<string, RGBColor>;
   planetAttachments: Record<string, string[]>;
@@ -52,6 +57,69 @@ export function enhancePlayerData(
       systemIdToPosition[systemId] = position;
     });
   }
+
+  /*
+    factionControlByTile: {"101": "Yin",}
+    factionAdjacencyByTile: {"101": ["Yin", "None", "Xxcha", null, null, null]}
+  */
+ 
+  // {calculatedTilePositions.map((tile, index) => {
+    
+
+  const factionControlByTile: Record<string, string> = {};
+  calculatedTilePositions.forEach(tile => {
+    const position = systemIdToPosition[tile.systemId];
+    if (!position && data?.tileUnitData) return;
+
+    const tileData: TileUnitData = (data.tileUnitData as any)[position];
+    const allEntityPlacements = getAllEntityPlacementsForTile(tile.systemId, tileData);
+    
+    // Check if all planets are controlled by the same faction
+    if (tileData.planets) {
+      const controllingFactions = Object.values(tileData.planets)
+        .map((planet) => planet.controlledBy)
+        .filter(Boolean);
+
+      if (controllingFactions.length > 0) {
+        const uniqueFactions = [...new Set(controllingFactions)];
+        if (uniqueFactions.length === 1) {
+          factionControlByTile[tile.ringPosition] = uniqueFactions[0];
+          return;
+        }
+      }
+    }
+
+    // Check if there are units from a single faction (excluding command counters)
+    const factionUnits = Object.values(allEntityPlacements)
+      .filter((placement) => placement.entityType === "unit")
+      .map((placement) => placement.faction);
+
+    if (factionUnits.length > 0) {
+      const uniqueFactionUnits = [...new Set(factionUnits)];
+      if (uniqueFactionUnits.length === 1) {
+        factionControlByTile[tile.ringPosition] = uniqueFactionUnits[0];
+        return;
+      }
+    }
+    
+    factionControlByTile[tile.ringPosition] = "NONE";
+  });
+    
+
+  const factionAdjacencyByTile: Record<string, (string | null)[]> = {};
+  Object.entries(factionControlByTile).forEach(([ringPosition, _]) => {
+    const adjacencies = tileAdjacencies[ringPosition];
+
+    if (!adjacencies) return "";
+
+    factionAdjacencyByTile[ringPosition] = adjacencies.map(tileCode => {
+      if (!tileCode || !factionControlByTile[tileCode]) return null;
+      
+      return factionControlByTile[tileCode];
+    });
+  });
+  // playerdataresponse.tileUnitData.val.space.name to color
+  // tileAdjacencies[tile]foreach ,  adjTile[0] < ringCount && adjTile in tileUnitData 
 
   const factionToColor =
     data.playerData?.reduce(
@@ -149,6 +217,8 @@ export function enhancePlayerData(
   return {
     ...data,
     // extra computed properties
+    factionControlByTile,
+    factionAdjacencyByTile,
     calculatedTilePositions,
     systemIdToPosition,
     factionToColor,

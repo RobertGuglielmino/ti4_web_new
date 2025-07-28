@@ -194,6 +194,8 @@ function NewMapUIContent() {
     systemIdToPosition = {},
     factionToColor = {},
     colorToFaction = {},
+    factionControlByTile = {},
+    factionAdjacencyByTile = {},
     optimizedColors = {},
     planetAttachments = {},
     allExhaustedPlanets = [],
@@ -236,6 +238,14 @@ function NewMapUIContent() {
   useEffect(() => {
     dragscroll.reset();
   }, [gameId]);
+
+  useEffect(() => {
+    
+  console.log("factionAdjacencyByTile");
+  console.log(factionAdjacencyByTile);
+  console.log("factionControlByTile");
+  console.log(factionControlByTile);
+  })
 
   const {
     zoom,
@@ -518,6 +528,8 @@ function NewMapUIContent() {
                           position={{ x: tile.x, y: tile.y }}
                           tileUnitData={tileData}
                           factionToColor={factionToColor}
+                          factionControl={factionControlByTile[tile.systemId]}
+                          factionAdjacencyControl={factionAdjacencyByTile[tile.systemId]}
                           optimizedColors={optimizedColors}
                           isHovered={hoveredTile === tile.systemId}
                           techSkipsMode={settings.techSkipsMode}
