@@ -1,119 +1,94 @@
+import { create } from 'zustand'
 
-// export function getAllTileData(data) {
-//     if (!data.tileUnitData) return;
-// }
+type SettingsStore = {
+  // State properties
+  hoveredTile: string;
+  zoomLevel: number;
+  leftSidebarVisible: boolean;
+  rightSidebarVisible: boolean;
+  enableOverlays: boolean;
+  showTechLayer: boolean;
+  showPDSLayer: boolean;
+  showDistanceLayer: boolean;
+  showControlLayer: boolean;
+  showControlTokens: boolean;
+  showExhaustedPlanets: boolean;
 
-//   if (data.tileUnitData) {
-//     Object.values(data.tileUnitData).forEach((tileData: any) => {
-//       if (tileData.planets) {
-//         Object.entries(tileData.planets).forEach(
-//           ([planetName, planetData]: [string, any]) => {
-//             if (planetData.entities) {
-//               const attachments: string[] = [];
-//               Object.entries(planetData.entities).forEach(
-//                 ([_faction, entities]) => {
-//                   if (Array.isArray(entities)) {
-//                     entities.forEach((entity: any) => {
-//                       if (entity.entityType === "attachment") {
-//                         attachments.push(entity.entityId);
-//                       }
-//                     });
-//                   }
-//                 }
-//               );
-//               if (attachments.length > 0) {
-//                 planetAttachments[planetName] = attachments;
-//               }
-//             }
-//           }
-//         );
-//       }
-//     });
-//   }
+  // Actions
+  setHoveredTile: (id: string) => void;
+  clearHoveredTile: () => void;
+  setZoomLevel: (level: number) => void;
+  toggleLeftSidebarVisible: () => void;
+  toggleRightSidebarVisible: () => void;
+  toggleEnableOverlays: () => void;
+  toggleShowTechLayer: () => void;
+  toggleShowPDSLayer: () => void;
+  toggleShowDistanceLayer: () => void;
+  toggleShowControlLayer: () => void;
+  toggleShowControlTokens: () => void;
+  toggleShowExhaustedPlanets: () => void;
+}
 
+export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
+  hoveredTile: "",
+  zoomLevel: 100,
+  leftSidebarVisible: false,
+  rightSidebarVisible: false,
+  enableOverlays: false,
+  showTechLayer: false,
+  showPDSLayer: false,
+  showDistanceLayer: false,
+  showControlLayer: false,
+  showControlTokens: false,
+  showExhaustedPlanets: false,
 
-
-
-
-// type MapStore = {
-//   mapTiles: Record<number, MapTile>,
-//   mapTileIds: number[],
-//   getMapTile: (id: number) => MapTile,
-//   addMapTile: (newMapTile: MapTile) => void,
-//   updateMapTile: (id: number, updates: Partial<MapTile>) => void
-// }
-
-// export const useMapStore = create<MapStore>((set, get) => ({
-
-//   mapTiles: {},
-//   mapTileIds: [],
-
-//   getMapTile: (id: number) => get().mapTiles[id],
-//   addMapTile: (newMapTile: MapTile) => set((state: { mapTiles: any; mapTileIds: any }) => ({
-//     mapTiles: {
-//       ...state.mapTiles,
-//       [newMapTile.position]: newMapTile
-//     },
-//     mapTileIds: [...state.mapTileIds, newMapTile.position]
-//   })),
-//   updateMapTile: (id: number, updates: any) => set((state) => ({
-//     mapTiles: {
-//       ...state.mapTiles,
-//       [id]: { ...state.mapTiles[id], ...updates }
-//     }
-//   })),
-// }))
-
-
-
-
-// type ObjectiveStore = {
-//   factions: string[],
-//   active: string,
-//   nextUp: string,
-//   strategyCards: string[],
-//   cardPool: {
-//     action: number,
-//     agenda: number,
-//     secret: number,
-//     relic: number,
-//     cultural: number,
-//     industrial: number, 
-//     hazardous: number,
-
-//   }
-//   objectives: Record<number, Objective>,
-//   objectiveIds: number[],
-//   getMapTile: (id: number) => MapTile,
-//   addMapTile: (newMapTile: MapTile) => void,
-//   updateMapTile: (id: number, updates: Partial<MapTile>) => void
-// }
-
-// export const useSettingsStore = create((set, get) => ({
-
-//   leftSidebarVisible: false,
-//   rightSidebarVisible: false,
-//   zoomLevel: 100, 
-//   showTechLayer: false,
-//   showPDSLayer: false,
-//   showControlLayer: false,
-//   showControlTokens: false,
-//   showExhaustedPlanets: false,
-
-//   getMapTile: (id: number) => get().mapTiles[id],
-//   addMapTile: (newMapTile: MapTile) => set((state: { mapTiles: any; mapTileIds: any }) => ({
-//     mapTiles: {
-//       ...state.mapTiles,
-//       [newMapTile.id]: newMapTile
-//     },
-//     mapTileIds: [...state.mapTileIds, newMapTile.id]
-//   })),
-//   updateMapTile: (id: number, updates: any) => set((state) => ({
-//     mapTiles: {
-//       ...state.mapTiles,
-//       [id]: { ...state.mapTiles[id], ...updates }
-//     }
-//   })),
-// }))
-
+  setHoveredTile: (id: string) => set((state) => ({
+    ...state,
+    hoveredTile: id
+  })),
+  clearHoveredTile: () => set((state) => ({
+    ...state,
+    hoveredTile: ""
+  })),
+  setZoomLevel: (level: number) => set((state) => ({
+    ...state,
+    zoomLevel: level
+  })),
+  toggleLeftSidebarVisible: () => set((state) => ({
+    ...state,
+    leftSidebarVisible: !state.leftSidebarVisible,
+  })),
+  toggleRightSidebarVisible: () => set((state) => ({
+    ...state,
+    rightSidebarVisible: !state.rightSidebarVisible,
+  })),
+  toggleEnableOverlays: () => set((state) => ({
+    ...state,
+    enableOverlays: !state.enableOverlays,
+  })),
+  toggleShowTechLayer: () => set((state) => ({
+    ...state,
+    showTechLayer: !state.showTechLayer,
+  })),
+  toggleShowPDSLayer: () => set((state) => ({
+    ...state,
+    showPDSLayer: !state.showPDSLayer,
+  })),
+  toggleShowDistanceLayer: () => set((state) => ({
+    ...state,
+    showDistanceLayer: !state.showDistanceLayer,
+  })),
+  toggleShowControlLayer: () => set((state) => ({
+    ...state,
+    showControlLayer: !state.showControlLayer,
+  })),
+  toggleShowControlTokens: () => set((state) => ({
+    ...state,
+    showControlTokens: !state.showControlTokens,
+  })),
+  toggleShowExhaustedPlanets: () => set((state) => ({
+    ...state,
+    showExhaustedPlanets: !state.showExhaustedPlanets,
+  })),
+}));

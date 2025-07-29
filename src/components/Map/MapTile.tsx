@@ -181,15 +181,6 @@ export const MapTile = React.memo<Props>(
       };
     }, []);
 
-
-    React.useEffect(() => {
-
-      console.log("factionControl");
-      console.log(factionControl);
-      console.log("factionAdjacencyControl");
-      console.log(factionAdjacencyControl);
-    })
-
     const allEntityPlacements = React.useMemo(() => {
       return getAllEntityPlacementsForTile(systemId, tileUnitData);
     }, [systemId, tileUnitData]);
