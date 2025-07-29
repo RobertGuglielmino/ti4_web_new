@@ -24,5 +24,63 @@ export interface Game {
   status: "waiting" | "active" | "completed";
 }
 
+export type MapTile = {
+  position: string;
+  systemId: string;
+  planets: Planet[];
+  space: Unit[];
+  anomaly: boolean;
+  wormholes: string[];
+  commandCounters: string[];
+  productionCapacity: number;
+  tokens: string[];
+  controller: string;
+  properties: {
+    x: number;
+    y: number;
+    hexOutline: {
+      points: {
+        x: number;
+        y: number;
+      }[];
+      sides: {
+        x1: number;
+        x2: number;
+        y1: number;
+        y2: number;
+      }[];
+    };
+    width: number;
+    height: number;
+  };
+};
+
+export type Planet = {
+  name: string;
+  baseResources: number;
+  baseInfluence: number;
+  totalResources: number;
+  totalInfluence: number;
+  type: string;
+  hasTechSpecialty: boolean;
+  techSpecialty?: string;
+  attachments: string[];
+  tokens: string[];
+  units: Unit[];
+  controller: string;
+  properties: {
+    x: number;
+    y: number;
+  };
+};
+
+export type Unit = {
+  type: string;
+  amount: number;
+  amountSustained: number;
+  owner: string;
+  color: string;
+};
+
 // Add more shared types as needed
 export {};

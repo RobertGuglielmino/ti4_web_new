@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   AppShell,
@@ -56,56 +56,14 @@ import { RightSidebar } from "./components/main/RightSidebar";
 import { MapPlanetDetailsCard } from "./components/main/MapPlanetDetailsCard";
 import { MapUnitDetailsCard } from "./components/main/MapUnitDetailsCard";
 import { PathVisualization } from "./components/PathVisualization";
-import { TilePosition } from "./utils/pathVisualization";
 import { useDistanceRendering } from "./hooks/useDistanceRendering";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
+import { useTabManagementNewUI } from "./hooks/useTabManagementNewUI";
 
 // Magic constant for required version schema
 const REQUIRED_VERSION_SCHEMA = 5;
 
-// TypeScript version of useTabManagement hook for NewMapUI
-function useTabManagementNewUI() {
-  const navigate = useNavigate();
-  const params = useParams<{ mapid: string }>();
-  const [activeTabs, setActiveTabs] = useState<string[]>([]);
-
-  useEffect(() => {
-    const storedTabs = JSON.parse(localStorage.getItem("activeTabs") || "[]");
-    const currentGame = params.mapid;
-    if (currentGame && !storedTabs.includes(currentGame)) {
-      storedTabs.push(currentGame);
-    }
-
-    setActiveTabs(storedTabs.filter((tab: string) => !!tab));
-  }, [params.mapid]);
-
-  useEffect(() => {
-    if (activeTabs.length === 0) return;
-    localStorage.setItem("activeTabs", JSON.stringify(activeTabs));
-  }, [activeTabs]);
-
-  const changeTab = (tab: string) => {
-    if (tab === params.mapid) return;
-    navigate(`/game/${tab}/newui`);
-  };
-
-  const removeTab = (tabValue: string) => {
-    const remaining = activeTabs.filter((tab) => tab !== tabValue);
-    setActiveTabs(remaining);
-    localStorage.setItem("activeTabs", JSON.stringify(remaining));
-
-    if (params.mapid !== tabValue) return;
-
-    if (remaining.length > 0) {
-      changeTab(remaining[0]);
-    } else {
-      navigate("/");
-    }
-  };
-
-  return { activeTabs, changeTab, removeTab };
-}
 
 const MAP_PADDING = 200;
 
@@ -190,6 +148,7 @@ function NewMapUIContent() {
 
   const {
     playerData = [],
+    mapTiles = [],
     calculatedTilePositions: tilePositions = [],
     systemIdToPosition = {},
     factionToColor = {},
@@ -233,9 +192,6 @@ function NewMapUIContent() {
 
   useEffect(() => {
     document.title = `${gameId} - Async TI`;
-  }, [gameId]);
-
-  useEffect(() => {
     dragscroll.reset();
   }, [gameId]);
 
@@ -512,7 +468,7 @@ function NewMapUIContent() {
                         }
                       )}
                     {/* Render tiles */}
-                    {tilePositions.map((tile, index) => {
+                    {mapTiles.map((tile, index) => {
                       const tileKey = `${tile.systemId}-${index}`;
                       const position = systemIdToPosition[tile.systemId];
                       const tileData =
@@ -523,19 +479,15 @@ function NewMapUIContent() {
                       return (
                         <MapTile
                           key={tileKey}
-                          ringPosition={tile.ringPosition}
-                          systemId={tile.systemId}
-                          position={{ x: tile.x, y: tile.y }}
+                          mapTile={tile}
                           tileUnitData={tileData}
                           factionToColor={factionToColor}
-                          factionControl={factionControlByTile[tile.systemId]}
                           factionAdjacencyControl={factionAdjacencyByTile[tile.systemId]}
                           optimizedColors={optimizedColors}
                           isHovered={hoveredTile === tile.systemId}
                           techSkipsMode={settings.techSkipsMode}
                           distanceMode={settings.distanceMode}
                           selectedTiles={selectedTiles}
-                          systemIdToPosition={systemIdToPosition}
                           overlaysEnabled={settings.overlaysEnabled}
                           lawsInPlay={lawsInPlay}
                           exhaustedPlanets={allExhaustedPlanets}

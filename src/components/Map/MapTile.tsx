@@ -19,10 +19,11 @@ import {
 import classes from "./MapTile.module.css";
 import { TileUnitData, LawInPlay } from "@/data/types";
 import { cdnImage } from "../../data/cdnImage";
-import { calculateTilePositions, TILE_HEIGHT, TILE_WIDTH } from "@/mapgen/tilePositioning";
+import { TILE_HEIGHT, TILE_WIDTH } from "@/mapgen/tilePositioning";
 import { getAttachmentData } from "../../data/attachments";
 import { RGBColor } from "../../utils/colorOptimization";
 import { TileSelectedOverlay } from "./TileSelectedOverlay";
+import { MapTile as MapTileType } from "@/types/global";
 
 // Helper function to check if a system has tech skips
 const systemHasTechSkips = (
@@ -69,11 +70,8 @@ const systemHasTechSkips = (
 };
 
 type Props = {
-  systemId: string;
-  position: { x: number; y: number };
-  ringPosition: string;
+  mapTile: MapTileType;
   tileUnitData?: TileUnitData;
-  factionControl: string;
   factionAdjacencyControl: (string | null)[],
   factionToColor: Record<string, string>;
   optimizedColors: Record<string, RGBColor>;
@@ -102,7 +100,6 @@ type Props = {
   distanceMode?: boolean;
   selectedTiles?: string[];
   tileDistance?: number | null;
-  systemIdToPosition?: Record<string, string>;
   overlaysEnabled?: boolean;
   lawsInPlay?: LawInPlay[];
   exhaustedPlanets?: string[];
@@ -113,10 +110,8 @@ type Props = {
 
 export const MapTile = React.memo<Props>(
   ({
-    systemId,
-    position,
+    mapTile,
     tileUnitData,
-    factionControl,
     factionAdjacencyControl,
     factionToColor,
     optimizedColors,
@@ -131,7 +126,6 @@ export const MapTile = React.memo<Props>(
     onPlanetMouseLeave,
     isSelected,
     isHovered,
-    ringPosition,
     techSkipsMode,
     distanceMode,
     selectedTiles,
@@ -144,6 +138,14 @@ export const MapTile = React.memo<Props>(
     isOnPath = true, // Default to true so tiles aren't dimmed unless explicitly marked
   }) => {
     const hoverTimeoutRef = React.useRef<Record<string, number>>({});
+
+    const ringPosition = mapTile.position;
+    const systemId=mapTile.systemId;
+    const factionControl = mapTile.controller;
+    const position = {
+      x: mapTile.properties.x,
+      y: mapTile.properties.y
+    };
 
     const handlePlanetMouseEnter = React.useCallback(
       (planetId: string, x: number, y: number) => {
@@ -187,98 +189,6 @@ export const MapTile = React.memo<Props>(
       console.log("factionAdjacencyControl");
       console.log(factionAdjacencyControl);
     })
-
-    const radius = 172.5; // Width = 345px
-    const height = Math.sqrt(3) * radius; // ~298.7px
-
-
-    const tilePositions = calculateTilePositions(statTilePositions.map(
-      (position) => `${position}:stat_${position}`
-    ), ringCount);
-
-    const hexagons: HexagonData[] = tilePositions.map((tile, index) => {
-      const cx = tile.x + 172.5;
-      const cy = tile.y + 149.5;
-      const points = generateHexagonPoints(cx, cy, radius);
-      const sides = generateHexagonSides(points);
-
-      sides.map((side, sideIndex) => {
-        if (side.isOpen) return null; // Don't render border for open sides
-
-        const allX = hexagons.flatMap((hex) => [hex.cx - radius, hex.cx + radius]);
-        const allY = hexagons.flatMap((hex) => [
-          hex.cy - height / 2,
-          hex.cy + height / 2,
-        ]);
-
-        const minX = Math.min(...allX);
-        const maxX = Math.max(...allX);
-        const minY = Math.min(...allY);
-        const maxY = Math.max(...allY);
-
-        const svgBounds = {
-          x: minX,
-          y: minY,
-          width: maxX - minX,
-          height: maxY - minY,
-        };
-
-        return (
-          <line
-            key={`${hex.id}-side-${sideIndex}`}
-            x1={side.x1 - svgBounds.x}
-            y1={side.y1 - svgBounds.y}
-            x2={side.x2 - svgBounds.x}
-            y2={side.y2 - svgBounds.y}
-            stroke={borderColor}
-            className={styles.borderLine}
-          />
-        );
-      });
-    });
-    // {sides.map((side, sideIndex) => {
-    //   if (side.isOpen) return null; // Don't render border for open sides
-
-    //   return (
-    //     <line
-    //       key={`${hex.id}-side-${sideIndex}`}
-    //       x1={side.x1 - svgBounds.x}
-    //       y1={side.y1 - svgBounds.y}
-    //       x2={side.x2 - svgBounds.x}
-    //       y2={side.y2 - svgBounds.y}
-    //       stroke={borderColor}
-    //       className={styles.borderLine}
-    //     />
-    //   );
-    // })}
-
-
-    // Generate hexagon points for flat-top hexagon
-    const generateHexagonPoints = (cx: number, cy: number, radius: number) => {
-      const points = [];
-      for (let i = 0; i < 6; i++) {
-        const angle = i * 60 * (Math.PI / 180); // Start at 0° for flat-top orientation
-        const x = cx + radius * Math.cos(angle);
-        const y = cy + radius * Math.sin(angle);
-        points.push({ x, y });
-      }
-      return points;
-    };
-
-    // Generate line segments for each side of the hexagon
-    const generateHexagonSides = (points: { x: number; y: number }[]) => {
-      const sides = [];
-      for (let i = 0; i < 6; i++) {
-        const nextI = (i + 1) % 6;
-        sides.push({
-          x1: points[i].x,
-          y1: points[i].y,
-          x2: points[nextI].x,
-          y2: points[nextI].y,
-        });
-      }
-      return sides;
-    };
 
     const allEntityPlacements = React.useMemo(() => {
       return getAllEntityPlacementsForTile(systemId, tileUnitData);
@@ -541,43 +451,7 @@ export const MapTile = React.memo<Props>(
       );
     }, [systemId, tileUnitData, factionToColor]);
 
-    // Determine controlling faction for the system overlay
-    const controllingFaction: string | null = React.useMemo(() => {
-      if (!tileUnitData) return null;
 
-      // Check if all planets are controlled by the same faction
-      if (tileUnitData.planets) {
-        const controllingFactions = Object.values(tileUnitData.planets)
-          .map((planet) => planet.controlledBy)
-          .filter(Boolean);
-
-        if (controllingFactions.length > 0) {
-          const uniqueFactions = [...new Set(controllingFactions)];
-          if (uniqueFactions.length === 1) {
-            return uniqueFactions[0];
-          }
-        }
-      }
-
-      // Check if there are units from a single faction (excluding command counters)
-      const factionUnits = Object.values(allEntityPlacements)
-        .filter((placement) => placement.entityType === "unit")
-        .map((placement) => placement.faction);
-
-      if (factionUnits.length > 0) {
-        const uniqueFactionUnits = [...new Set(factionUnits)];
-        if (uniqueFactionUnits.length === 1) {
-          return uniqueFactionUnits[0];
-        }
-      }
-
-      return null;
-    }, [tileUnitData, allEntityPlacements]);
-
-    React.useEffect(() => {
-      console.log("controllingFaction");
-      console.log(controllingFaction);
-    })
 
 
     const isDistanceSelected =
@@ -590,8 +464,8 @@ export const MapTile = React.memo<Props>(
           } ${isHovered ? classes.hovered : ""} ${isDistanceSelected ? classes.distanceSelected : ""
           } ${isDistanceHoverable ? classes.distanceHoverable : ""}`}
         style={{
-          left: `${position.x}px`,
-          top: `${position.y}px`,
+          left: `${mapTile.properties.x}px`,
+          top: `${mapTile.properties.y}px`,
           opacity: (() => {
             // Tech skips mode takes priority
             if (techSkipsMode) {

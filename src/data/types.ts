@@ -230,6 +230,12 @@ type CardPoolData = {
 
 export type { CardPoolData };
 
+  import { MapTile } from "@/types/global";
+import {
+  TilePosition,
+} from "../mapgen/tilePositioning";
+import { RGBColor } from "../utils/colorOptimization";
+
 export type PlayerDataResponse = {
   ringCount: number;
   playerData: PlayerData[];
@@ -246,6 +252,36 @@ export type PlayerDataResponse = {
   gameName: string;
   gameCustomName?: string;
 };
+
+
+export type EnhancedPlayerData = {
+  playerData: PlayerData[];
+  mapTiles: MapTile[];
+  ringCount: number;
+  tileUnitData: Record<string, TileUnitData>;
+  tilePositions: string[];
+  statTilePositions: Record<string, string[]>;
+  lawsInPlay: LawInPlay[];
+  strategyCards: StrategyCard[];
+  vpsToWin: number;
+  objectives: Objectives;
+  cardPool: CardPoolData;
+  versionSchema?: number;
+  gameRound: number;
+  gameName: string;
+  gameCustomName?: string;
+
+  
+  allExhaustedPlanets: string[];
+  calculatedTilePositions: TilePosition[];
+  systemIdToPosition: Record<string, string>;
+  factionToColor: Record<string, string>;
+  factionControlByTile: Record<string, string>,
+  factionAdjacencyByTile: Record<string, (string | null)[]>,
+  colorToFaction: Record<string, string>;
+  optimizedColors: Record<string, RGBColor>;
+};
+
 
 export type PlayerData = {
   userName: string;

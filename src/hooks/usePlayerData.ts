@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { PlayerDataResponse } from "../data/types";
+import { EnhancedPlayerData, PlayerDataResponse } from "../data/types";
 import {
-  EnhancedPlayerData,
   enhancePlayerData,
 } from "@/data/enhancePlayerData";
 import { useMemo } from "react";
