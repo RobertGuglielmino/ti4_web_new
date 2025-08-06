@@ -1,25 +1,18 @@
 import {
   PlayerDataResponse,
-  TileUnitData,
   EnhancedPlayerData,
 } from "./types";
 import {
   calculateSingleTilePosition,
-  calculateTilePositions,
 } from "../mapgen/tilePositioning";
 import { optimizeFactionColors, RGBColor } from "../utils/colorOptimization";
 import { getColorValues } from "../lookup/colors";
 import { colors } from "./colors";
-import { tileAdjacencies } from "./tileAdjacencies";
-import { getAllEntityPlacementsForTile } from "@/utils/unitPositioning";
 import { MapTile, Planet } from "@/types/global";
 
 export function enhancePlayerData(
   data: PlayerDataResponse
 ): EnhancedPlayerData {
-  const calculatedTilePositions = data.tilePositions
-    ? calculateTilePositions(data.tilePositions, data.ringCount)
-    : [];
 
   const systemIdToPosition: Record<string, string> = {};
   if (data.tilePositions) {
@@ -28,70 +21,6 @@ export function enhancePlayerData(
       systemIdToPosition[systemId] = position;
     });
   }
-
-  /*
-    factionControlByTile: {"101": "Yin",}
-    factionAdjacencyByTile: {"101": ["Yin", "None", "Xxcha", null, null, null]}
-  */
-
-  // {calculatedTilePositions.map((tile, index) => {
-
-  const factionControlByTile: Record<string, string> = {};
-  calculatedTilePositions.forEach((tile) => {
-    const position = systemIdToPosition[tile.systemId];
-    if (!position && data?.tileUnitData) return;
-
-    const tileData: TileUnitData = (data.tileUnitData as any)[position];
-    const allEntityPlacements = getAllEntityPlacementsForTile(
-      tile.systemId,
-      tileData
-    );
-
-    // Check if all planets are controlled by the same faction
-    if (tileData.planets) {
-      const controllingFactions = Object.values(tileData.planets)
-        .map((planet) => planet.controlledBy)
-        .filter(Boolean);
-
-      if (controllingFactions.length > 0) {
-        const uniqueFactions = [...new Set(controllingFactions)];
-        if (uniqueFactions.length === 1) {
-          factionControlByTile[tile.ringPosition] = uniqueFactions[0];
-          return;
-        }
-      }
-    }
-
-    // Check if there are units from a single faction (excluding command counters)
-    const factionUnits = Object.values(allEntityPlacements)
-      .filter((placement) => placement.entityType === "unit")
-      .map((placement) => placement.faction);
-
-    if (factionUnits.length > 0) {
-      const uniqueFactionUnits = [...new Set(factionUnits)];
-      if (uniqueFactionUnits.length === 1) {
-        factionControlByTile[tile.ringPosition] = uniqueFactionUnits[0];
-        return;
-      }
-    }
-
-    factionControlByTile[tile.ringPosition] = "NONE";
-  });
-
-  const factionAdjacencyByTile: Record<string, (string | null)[]> = {};
-  Object.entries(factionControlByTile).forEach(([ringPosition, _]) => {
-    const adjacencies = tileAdjacencies[ringPosition];
-
-    if (!adjacencies) return "";
-
-    factionAdjacencyByTile[ringPosition] = adjacencies.map((tileCode) => {
-      if (!tileCode || !factionControlByTile[tileCode]) return null;
-
-      return factionControlByTile[tileCode];
-    });
-  });
-  // playerdataresponse.tileUnitData.val.space.name to color
-  // tileAdjacencies[tile]foreach ,  adjTile[0] < ringCount && adjTile in tileUnitData
 
   const factionToColor =
     data.playerData?.reduce(
@@ -102,17 +31,7 @@ export function enhancePlayerData(
       {} as Record<string, string>
     ) || {};
 
-  const colorToFaction =
-    data.playerData?.reduce(
-      (acc, player) => {
-        acc[player.color] = player.faction;
-        return acc;
-      },
-      {} as Record<string, string>
-    ) || {};
 
-
-  // Generate hexagon points for flat-top hexagon
   function generateHexagonPoints(cx: number, cy: number, radius: number) {
     const points = [];
     for (let i = 0; i < 6; i++) {
@@ -124,7 +43,6 @@ export function enhancePlayerData(
     return points;
   }
 
-  // Generate line segments for each side of the hexagon
   function generateHexagonSides(points: { x: number; y: number }[]) {
     const sides = [];
     for (let i = 0; i < 6; i++) {
@@ -138,6 +56,10 @@ export function enhancePlayerData(
     }
     return sides;
   }
+
+  const planetAttachments: Record<string, string[]> = {};
+  
+  console.log("factionColorMap");
 
   function parseMapTiles(): MapTile[] {
     let mapTiles: MapTile[] = [];
@@ -199,8 +121,8 @@ export function enhancePlayerData(
             },
           };
 
-          Object.entries(planetData.entities).forEach(([faction, entities]) => {
-            entities.forEach((entity) => {
+          Object.entries(planetData.entities).forEach(([faction, entities]: [string, any]) => {
+            entities.forEach((entity: any) => {
               if (entity.entityType === "unit") {
                 newPlanet.units.push({
                   type: entity.entityType,
@@ -216,13 +138,16 @@ export function enhancePlayerData(
             });
           });
 
+          if (newPlanet.attachments.length > 0) {
+            planetAttachments[planetName] = newPlanet.attachments;
+          }
           newMapTile.planets.push(newPlanet);
         }
       );
 
       Object.entries(tileData.space).forEach(
         ([faction, entities]: [string, any]) => {
-          entities.forEach((entity) => {
+          entities.forEach((entity: any) => {
             if (entity.entityType === "unit") {
               newMapTile.space.push({
                 type: entity.entityType,
@@ -261,8 +186,6 @@ export function enhancePlayerData(
     return mapTiles;
   }
 
-  const planetAttachments: never[] = [];
-  // Calculate optimized colors for faction overlays
   const optimizedColors: Record<string, RGBColor> = (() => {
     // Get unique colors that are actually in use by factions
     const colorsInUse = new Set(Object.values(factionToColor));
@@ -292,7 +215,6 @@ export function enhancePlayerData(
     return optimizeFactionColors(transformedColors);
   })();
 
-  // Collect all exhausted planets from all players
   const allExhaustedPlanets: string[] = (() => {
     if (!data.playerData) return [];
 
@@ -311,18 +233,45 @@ export function enhancePlayerData(
   const mapTiles = parseMapTiles();
 
 
+  const factionColorMap: FactionColorMap = {}
+
+  // you can use either Faction or Color to access all of faction/color/optimized color.
+  // this way, we don't have to pass two objects around (though maybe this is too fancy)
+  data.playerData.forEach((player) => {
+    factionColorMap[player.faction] = {
+      faction: player.faction,
+      color: player.color,
+      optimizedColor: optimizedColors[player.color]
+    };
+    factionColorMap[player.color] = {
+      faction: player.faction,
+      color: player.color,
+      optimizedColor: optimizedColors[player.color]
+    };
+  })
+
+
+
   return {
     ...data,
-    mapTiles,
-    // extra computed properties
-    factionControlByTile,
-    factionAdjacencyByTile,
-    calculatedTilePositions,
-    systemIdToPosition,
-    factionToColor,
-    colorToFaction,
-    optimizedColors,
-    planetAttachments,
-    allExhaustedPlanets,
+    eData: {
+      planetAttachments,
+      mapTiles,
+      tilePositions: data.tilePositions,
+      systemIdToPosition,
+      factionColorMap,
+      allExhaustedPlanets,
+    }
   };
+}
+
+
+export type FactionColorMap = {
+  [key: string]: FactionColorData
+}
+
+export type FactionColorData = {
+  faction: string,
+  color: string,
+  optimizedColor: RGBColor
 }

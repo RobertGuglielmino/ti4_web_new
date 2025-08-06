@@ -4,6 +4,7 @@ import { PromissoryNote } from "../PromissoryNote";
 import { EmptyPromissoryNotePlaceholder } from "../PromissoryNote";
 import { SmoothPopover } from "../../shared/SmoothPopover";
 import { PromissoryNoteCard } from "../PromissoryNoteCard";
+import { FactionColorMap } from "@/data/enhancePlayerData";
 
 type Props = {
   promissoryNotes: string[];

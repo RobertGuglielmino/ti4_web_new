@@ -1,10 +1,11 @@
 import React from "react";
 import { CommandCounter } from "./CommandCounter";
 import { getColorAlias } from "@/lookup/colors";
+import { FactionColorMap } from "@/data/enhancePlayerData";
 
 type CommandCounterStackProps = {
   factions: string[];
-  factionToColor: Record<string, string>;
+  factionColorMap: FactionColorMap;
   style?: React.CSSProperties;
 };
 
@@ -12,7 +13,7 @@ const TILE_OFFSET_X = 10;
 const TILE_OFFSET_Y = 90;
 export const CommandCounterStack = ({
   factions,
-  factionToColor,
+  factionColorMap,
   style,
 }: CommandCounterStackProps) => {
   if (factions.length === 0) {
@@ -22,7 +23,7 @@ export const CommandCounterStack = ({
   return (
     <div style={{ position: "relative", ...style }}>
       {factions.map((faction, index) => {
-        const colorAlias = getColorAlias(factionToColor[faction]);
+        const colorAlias = getColorAlias(factionColorMap[faction]);
         const offsetX = index * 16;
         const offsetY = index * 16;
         const zIndex = index + 1;

@@ -1,25 +1,26 @@
 import { Box, Group, Text, Image } from "@mantine/core";
 import { cdnImage } from "../../../data/cdnImage";
+import { FactionColorMap } from "@/data/enhancePlayerData";
 
 type Props = {
   neighbors: string[];
-  colorToFaction: Record<string, string>;
+  factionColorMap: FactionColorMap
 };
 
 // Helper function to get neighbor faction icons from neighbor colors
 const getNeighborFactionIcons = (
   neighbors: string[],
-  colorToFaction: Record<string, string>
+  factionColorMap: FactionColorMap
 ) => {
   return neighbors
     .map((neighborColor) => {
-      return colorToFaction[neighborColor] || null;
+      return factionColorMap[neighborColor] || null;
     })
     .filter(Boolean); // Remove null values
 };
 
-export function Neighbors({ neighbors, colorToFaction }: Props) {
-  const neighborFactions = getNeighborFactionIcons(neighbors, colorToFaction);
+export function Neighbors({ neighbors, factionColorMap }: Props) {
+  const neighborFactions = getNeighborFactionIcons(neighbors, factionColorMap);
 
   return (
     <Box

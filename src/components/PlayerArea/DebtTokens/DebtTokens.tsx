@@ -2,14 +2,14 @@ import { Box, Group, Text } from "@mantine/core";
 import { SmallControlToken } from "../../Map/ControlToken";
 import { getColorAlias } from "../../../lookup/colors";
 import styles from "./DebtTokens.module.css";
+import { FactionColorMap } from "@/data/enhancePlayerData";
 
 type Props = {
   debts: Record<string, number>;
-  colorToFaction?: Record<string, string>;
-  factionToColor?: Record<string, string>;
+  factionColorMap: FactionColorMap;
 };
 
-export function DebtTokens({ debts, colorToFaction }: Props) {
+export function DebtTokens({ debts, factionColorMap }: Props) {
   const debtEntries = Object.entries(debts).filter(([, amount]) => amount > 0);
   if (debtEntries.length === 0) return null;
 

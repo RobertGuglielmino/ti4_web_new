@@ -2,17 +2,15 @@ import { TILE_HEIGHT, TILE_WIDTH } from "@/mapgen/tilePositioning";
 import { RGBColor } from "@/utils/colorOptimization";
 
 type FactionColorOverlayProps = {
-  faction: string;
   opacity?: number;
-  optimizedColors?: Record<string, RGBColor>;
+  optimizedColors?: RGBColor;
 };
 
 export const FactionColorOverlay = ({
-  faction,
   opacity = 0.15,
   optimizedColors,
 }: FactionColorOverlayProps) => {
-  const optimizedColor = optimizedColors?.[faction];
+  const optimizedColor = optimizedColors!;
 
   if (!optimizedColor) {
     return null;

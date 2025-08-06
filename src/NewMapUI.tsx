@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   AppShell,
@@ -40,7 +40,6 @@ import PlayerCard2Mid from "./components/PlayerCard2Mid";
 import { MapTile } from "./components/Map/MapTile";
 import { PlayerStatsArea } from "./components/Map/PlayerStatsArea";
 import classes from "./components/MapUI.module.css";
-import { useZoom } from "./hooks/useZoom";
 
 import { useTabsAndTooltips } from "./hooks/useTabsAndTooltips";
 import { useSidebarDragHandle } from "./hooks/useSidebarDragHandle";
@@ -49,7 +48,7 @@ import { DragHandle } from "./components/DragHandle";
 import ScoreBoard from "./components/ScoreBoard";
 import { UpdateNeededScreen } from "./components/UpdateNeededScreen";
 import { LeftSidebar } from "./components/main/LeftSidebar";
-import { SettingsProvider, useSettings } from "./context/SettingsContext";
+import { SettingsProvider } from "./context/SettingsContext";
 import { SettingsModal } from "./components/SettingsModal";
 import { PanelToggleButton } from "./components/PanelToggleButton";
 import { RightSidebar } from "./components/main/RightSidebar";
@@ -60,12 +59,12 @@ import { useDistanceRendering } from "./hooks/useDistanceRendering";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
 import { useTabManagementNewUI } from "./hooks/useTabManagementNewUI";
+import { useSettingsStore, useStore } from "./utils/dataManagement";
+import { useZoom } from "./hooks/useZoom";
 
 // Magic constant for required version schema
 const REQUIRED_VERSION_SCHEMA = 5;
 
-
-const MAP_PADDING = 200;
 
 function NewMapUIContent() {
   const params = useParams<{ mapid: string }>();
@@ -73,26 +72,21 @@ function NewMapUIContent() {
 
   const { activeTabs, changeTab, removeTab } = useTabManagementNewUI();
 
+  
   const {
-    settings,
-    toggleOverlays,
-    toggleTechSkipsMode,
-    toggleDistanceMode,
-    toggleLeftPanelCollapsed,
-    toggleRightPanelCollapsed,
-    updateSettings,
-  } = useSettings();
+    zoom,
+    handleZoomIn,
+    handleZoomOut,
+    handleZoomReset,
+    handleZoomScreenSize
+  } = useZoom(undefined, undefined);
 
-  const [settingsModalOpened, setSettingsModalOpened] = useState(false);
-  const [keyboardShortcutsModalOpened, setKeyboardShortcutsModalOpened] =
-    useState(false);
 
   const {
     selectedArea,
     activeArea,
     selectedFaction,
     activeUnit,
-    tooltipUnit,
     handleAreaSelect,
     handleAreaMouseEnter,
     handleAreaMouseLeave,
@@ -101,34 +95,17 @@ function NewMapUIContent() {
     handleMouseDown,
   } = useTabsAndTooltips();
 
-  const [tooltipPlanet, setTooltipPlanet] = useState<{
-    systemId: string;
-    planetId: string;
-    coords: { x: number; y: number };
-  } | null>(null);
-
-  const handlePlanetMouseEnter = useCallback(
-    (systemId: string, planetId: string, x: number, y: number) => {
-      setTooltipPlanet({ systemId, planetId, coords: { x, y } });
-    },
-    []
-  );
-
-  const handlePlanetMouseLeave = useCallback(() => {
+  const handleUnitMouseOver = (faction: string, unitId: string, x: number, y: number) => {
     setTooltipPlanet(null);
-  }, []);
+    handleMouseEnter(faction, unitId, x, y);
+  };
 
-  const handleUnitMouseEnter = useCallback(
-    (faction: string, unitId: string, x: number, y: number) => {
-      setTooltipPlanet(null);
-      handleMouseEnter(faction, unitId, x, y);
-    },
-    [handleMouseEnter]
-  );
+  const handlePlanetHover = (systemId: string, planetId: string, x: number, y: number) => {
+    setTooltipPlanet({ systemId, planetId, coords: { x, y } });
+  };
 
-  const handleUnitMouseLeave = useCallback(() => {
-    handleMouseLeave();
-  }, [handleMouseLeave]);
+  const handlePlanetLeave = () => setTooltipPlanet(null);
+
 
   const { sidebarWidth, isDragging, handleSidebarMouseDown } =
     useSidebarDragHandle(30);
@@ -148,16 +125,15 @@ function NewMapUIContent() {
 
   const {
     playerData = [],
-    mapTiles = [],
-    calculatedTilePositions: tilePositions = [],
-    systemIdToPosition = {},
-    factionToColor = {},
-    colorToFaction = {},
-    factionControlByTile = {},
-    factionAdjacencyByTile = {},
-    optimizedColors = {},
-    planetAttachments = {},
-    allExhaustedPlanets = [],
+    eData = {
+      mapTiles: [],
+      calculatedTilePositions: [],
+      tilePositions: {},
+      systemIdToPosition: {},
+      factionColorMap: {},
+      allExhaustedPlanets: [],
+      planetAttachments: {},
+    },  
     objectives = {
       stage1Objectives: [],
       stage2Objectives: [],
@@ -175,18 +151,42 @@ function NewMapUIContent() {
   } = enhancedData || {};
   const data = enhancedData;
 
+
+  const mapPadding = useStore((state) => state.mapPadding);
+  // const zoom = useSettingsStore((state) => state.settings.zoomLevel);
+  const tooltipPlanet = useStore((state) => state.tooltipPlanet);
+  const setTooltipPlanet = useStore((state) => state.setTooltipPlanet);
+  
+  const isFirefox = useSettingsStore((state) => state.settings.isFirefox);
+  const techSkipsMode = useSettingsStore((state) => state.settings.techSkipsMode);
+  const distanceMode = useSettingsStore((state) => state.settings.distanceMode);
+  const leftPanelCollapsed = useSettingsStore((state) => state.settings.leftPanelCollapsed);
+  const rightPanelCollapsed = useSettingsStore((state) => state.settings.rightPanelCollapsed);
+  const enableOverlays = useSettingsStore((state) => state.settings.enableOverlays);
+  // const hoveredTile = useSettingsStore((state) => state.settings.hoveredTile);
+  const settingsModalOpened = useSettingsStore((state) => state.settings.settingsModalOpened);
+  const keyboardShortcutsModalOpened = useSettingsStore((state) => state.settings.keyboardShortcutsModalOpened);
+  const updateSettings = useSettingsStore((state) => state.updateSettings);
+  const setSettingsModalOpened = useSettingsStore((state) => state.setSettingsModalOpened);
+  const setKeyboardShortcutsModalOpened = useSettingsStore((state) => state.setKeyboardShortcutsModalOpened);
+  const toggleTechSkipsMode = useSettingsStore((state) => state.toggleTechSkipsMode);
+  const toggleOverlays = useSettingsStore((state) => state.toggleOverlays);
+  const toggleDistanceMode = useSettingsStore((state) => state.toggleDistanceMode);
+  const toggleLeftPanelCollapsed = useSettingsStore((state) => state.toggleLeftPanelCollapsed);
+  const toggleRightPanelCollapsed = useSettingsStore((state) => state.toggleRightPanelCollapsed);
+  // const isHovered = hoveredTile === mapTile.systemId;
+
   const {
     selectedTiles,
     pathResult,
-    hoveredTile,
     systemsOnPath,
     activePathIndex,
     handleTileSelect,
     handleTileHover,
     handlePathIndexChange,
   } = useDistanceRendering({
-    distanceMode: settings.distanceMode,
-    systemIdToPosition,
+    distanceMode: distanceMode,
+    systemIdToPosition: eData.systemIdToPosition,
     tileUnitData: data?.tileUnitData,
   });
 
@@ -195,28 +195,14 @@ function NewMapUIContent() {
     dragscroll.reset();
   }, [gameId]);
 
-  useEffect(() => {
-    
-  console.log("factionAdjacencyByTile");
-  console.log(factionAdjacencyByTile);
-  console.log("factionControlByTile");
-  console.log(factionControlByTile);
-  })
 
-  const {
-    zoom,
-    handleZoomIn,
-    handleZoomOut,
-    handleZoomReset,
-    handleZoomScreenSize,
-  } = useZoom(undefined, undefined);
 
   const { mapContainerRef } = useMapScrollPosition({
     playerData,
-    tilePositions,
+    tilePositions: eData.tilePositions,
     zoom,
     gameId,
-    mapPadding: MAP_PADDING,
+    mapPadding: mapPadding,
   });
 
   // Add keyboard shortcuts
@@ -227,8 +213,8 @@ function NewMapUIContent() {
     toggleDistanceMode,
     toggleLeftPanelCollapsed,
     toggleRightPanelCollapsed,
-    isLeftPanelCollapsed: settings.isLeftPanelCollapsed,
-    isRightPanelCollapsed: settings.isRightPanelCollapsed,
+    isLeftPanelCollapsed: leftPanelCollapsed,
+    isRightPanelCollapsed: rightPanelCollapsed,
     updateSettings,
     handleZoomIn,
     handleZoomOut,
@@ -236,9 +222,6 @@ function NewMapUIContent() {
     selectedArea,
   });
 
-  const isFirefox =
-    typeof navigator !== "undefined" &&
-    navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
 
   const navigate = useNavigate();
 
@@ -317,9 +300,9 @@ function NewMapUIContent() {
                 Player Areas
               </Tabs.Tab>
               <Button
-                variant={settings.techSkipsMode ? "filled" : "subtle"}
+                variant={techSkipsMode ? "filled" : "subtle"}
                 size="sm"
-                color={settings.techSkipsMode ? "cyan" : "gray"}
+                color={techSkipsMode ? "cyan" : "gray"}
                 style={{ height: "36px", minWidth: "36px" }}
                 px={8}
                 onClick={toggleTechSkipsMode}
@@ -327,9 +310,9 @@ function NewMapUIContent() {
                 <IconFlask size={16} />
               </Button>
               <Button
-                variant={settings.distanceMode ? "filled" : "subtle"}
+                variant={distanceMode ? "filled" : "subtle"}
                 size="sm"
-                color={settings.distanceMode ? "orange" : "gray"}
+                color={distanceMode ? "orange" : "gray"}
                 style={{ height: "36px", minWidth: "36px" }}
                 px={8}
                 onClick={toggleDistanceMode}
@@ -355,11 +338,11 @@ function NewMapUIContent() {
                 }}
               />
               <Switch
-                checked={settings.overlaysEnabled}
+                checked={enableOverlays}
                 onChange={toggleOverlays}
                 size="sm"
                 thumbIcon={
-                  settings.overlaysEnabled ? (
+                  enableOverlays ? (
                     <IconEye size={12} />
                   ) : (
                     <IconEye size={12} style={{ opacity: 0.5 }} />
@@ -396,7 +379,7 @@ function NewMapUIContent() {
                   ref={mapContainerRef}
                   className={`dragscroll ${classes.mapArea}`}
                   style={{
-                    width: settings.isRightPanelCollapsed
+                    width: leftPanelCollapsed
                       ? "100%"
                       : `${100 - sidebarWidth}%`,
                   }}
@@ -406,17 +389,16 @@ function NewMapUIContent() {
                   {/* Left Panel Toggle Button */}
                   {((objectives && playerData) ||
                     (lawsInPlay && lawsInPlay.length > 0)) && (
-                    <PanelToggleButton
-                      isCollapsed={settings.isLeftPanelCollapsed}
-                      onClick={toggleLeftPanelCollapsed}
-                      position="left"
-                    />
-                  )}
+                      <PanelToggleButton
+                        onClick={toggleLeftPanelCollapsed}
+                        position="left"
+                      />
+                    )}
 
                   <div
                     className={classes.zoomControlsDynamic}
                     style={{
-                      right: settings.isRightPanelCollapsed
+                      right: leftPanelCollapsed
                         ? "35px"
                         : `calc(${sidebarWidth}vw + 35px)`,
                       transition: isDragging ? "none" : "right 0.1s ease",
@@ -439,8 +421,8 @@ function NewMapUIContent() {
                       ...(isFirefox ? {} : { zoom: zoom }),
                       MozTransform: `scale(${zoom})`,
                       MozTransformOrigin: "top left",
-                      top: MAP_PADDING / zoom,
-                      left: MAP_PADDING / zoom,
+                      top: mapPadding / zoom,
+                      left: mapPadding / zoom,
                     }}
                   >
                     {/* Render stat tiles for each faction */}
@@ -459,18 +441,16 @@ function NewMapUIContent() {
                               faction={faction}
                               playerData={player as any}
                               statTilePositions={statTiles as string[]}
-                              color={factionToColor[faction]}
                               vpsToWin={vpsToWin}
-                              factionToColor={factionToColor}
+                              factionColorMap={eData.factionColorMap}
                               ringCount={ringCount}
                             />
                           );
                         }
                       )}
                     {/* Render tiles */}
-                    {mapTiles.map((tile, index) => {
-                      const tileKey = `${tile.systemId}-${index}`;
-                      const position = systemIdToPosition[tile.systemId];
+                    {eData.mapTiles.map((tile, index) => {
+                      const position = enhancedData.eData.systemIdToPosition[tile.systemId];
                       const tileData =
                         position && data?.tileUnitData
                           ? (data.tileUnitData as any)[position]
@@ -478,29 +458,19 @@ function NewMapUIContent() {
 
                       return (
                         <MapTile
-                          key={tileKey}
+                          key={`${tile.systemId}-${index}`}
                           mapTile={tile}
                           tileUnitData={tileData}
-                          factionToColor={factionToColor}
-                          factionAdjacencyControl={factionAdjacencyByTile[tile.systemId]}
-                          optimizedColors={optimizedColors}
-                          isHovered={hoveredTile === tile.systemId}
-                          techSkipsMode={settings.techSkipsMode}
-                          distanceMode={settings.distanceMode}
+                          factionColorMap={eData.factionColorMap}
                           selectedTiles={selectedTiles}
-                          overlaysEnabled={settings.overlaysEnabled}
                           lawsInPlay={lawsInPlay}
-                          exhaustedPlanets={allExhaustedPlanets}
-                          alwaysShowControlTokens={
-                            settings.alwaysShowControlTokens
-                          }
-                          showExhaustedPlanets={settings.showExhaustedPlanets}
+                          exhaustedPlanets={eData.allExhaustedPlanets}
                           isOnPath={systemsOnPath.has(tile.systemId)}
-                          onUnitMouseOver={handleUnitMouseEnter}
-                          onUnitMouseLeave={handleUnitMouseLeave}
+                          onUnitMouseOver={handleUnitMouseOver}
+                          onUnitMouseLeave={handleMouseLeave}
                           onUnitSelect={handleMouseDown}
-                          onPlanetHover={handlePlanetMouseEnter}
-                          onPlanetMouseLeave={handlePlanetMouseLeave}
+                          onPlanetHover={handlePlanetHover}
+                          onPlanetMouseLeave={handlePlanetLeave}
                           onTileSelect={handleTileSelect}
                           onTileHover={handleTileHover}
                         />
@@ -510,26 +480,19 @@ function NewMapUIContent() {
 
                   <PathVisualization
                     pathResult={pathResult}
-                    systemIdToPosition={systemIdToPosition}
-                    tilePositions={tilePositions}
-                    zoom={zoom}
-                    mapPadding={MAP_PADDING}
+                    systemIdToPosition={eData.systemIdToPosition}
+                    tilePositions={eData.tilePositions}
                     activePathIndex={activePathIndex}
                     onPathIndexChange={handlePathIndexChange}
                   />
 
                   <MapUnitDetailsCard
-                    tooltipUnit={tooltipUnit}
                     playerData={playerData}
-                    zoom={zoom}
-                    mapPadding={MAP_PADDING}
                   />
 
                   <MapPlanetDetailsCard
                     tooltipPlanet={tooltipPlanet}
-                    zoom={zoom}
-                    mapPadding={MAP_PADDING}
-                    planetAttachments={planetAttachments}
+                    planetAttachments={eData.planetAttachments}
                   />
 
                   {/* Reconnect button when disconnected */}
@@ -557,11 +520,10 @@ function NewMapUIContent() {
                 <DragHandle onMouseDown={handleSidebarMouseDown} />
 
                 <PanelToggleButton
-                  isCollapsed={settings.isRightPanelCollapsed}
                   onClick={toggleRightPanelCollapsed}
                   position="right"
                   style={{
-                    right: settings.isRightPanelCollapsed
+                    right: rightPanelCollapsed
                       ? "10px"
                       : `calc(${sidebarWidth}vw + 14px)`,
                     transition: isDragging ? "none" : "right 0.1s ease",
@@ -569,7 +531,6 @@ function NewMapUIContent() {
                 />
 
                 <RightSidebar
-                  isRightPanelCollapsed={settings.isRightPanelCollapsed}
                   sidebarWidth={sidebarWidth}
                   enhancedData={enhancedData}
                   selectedArea={selectedArea}
@@ -606,9 +567,8 @@ function NewMapUIContent() {
                       <PlayerCard2Mid
                         key={player.color}
                         playerData={player}
-                        colorToFaction={colorToFaction}
-                        factionToColor={factionToColor}
-                        planetAttachments={planetAttachments}
+                        factionColorMap={enhancedData.eData.factionColorMap}
+                        planetAttachments={enhancedData.eData.planetAttachments}
                       />
                     ))}
                   </SimpleGrid>
@@ -634,13 +594,11 @@ function NewMapUIContent() {
         </Box>
       </AppShell.Main>
 
-      {/* Settings Modal */}
       <SettingsModal
         opened={settingsModalOpened}
         onClose={() => setSettingsModalOpened(false)}
       />
 
-      {/* Keyboard Shortcuts Modal */}
       <KeyboardShortcutsModal
         opened={keyboardShortcutsModalOpened}
         onClose={() => setKeyboardShortcutsModalOpened(false)}

@@ -7,6 +7,8 @@ import {
   IconScreenShareOff,
 } from "@tabler/icons-react";
 
+
+
 export function ZoomControls({
   zoom,
   onZoomIn,

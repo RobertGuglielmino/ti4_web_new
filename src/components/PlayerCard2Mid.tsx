@@ -39,6 +39,7 @@ import { getTokenImagePath } from "@/lookup/tokens";
 import { DebtTokens } from "./PlayerArea/DebtTokens";
 import { getUnitAsyncId } from "@/lookup/units";
 import { getPlanetData } from "@/lookup/planets";
+import { FactionColorMap } from "@/data/enhancePlayerData";
 
 // Strategy card names and colors mapping
 const SC_NAMES = {
@@ -65,8 +66,7 @@ const SC_COLORS = {
 
 type Props = {
   playerData: PlayerData;
-  factionToColor: Record<string, string>;
-  colorToFaction: Record<string, string>;
+  factionColorMap: FactionColorMap;
   planetAttachments?: Record<string, string[]>;
 };
 
@@ -314,7 +314,7 @@ export default function PlayerCard2Mid(props: Props) {
           <Box visibleFrom="sm">
             <Neighbors
               neighbors={neighbors || []}
-              colorToFaction={props.colorToFaction}
+              factionColorMap={props.factionColorMap}
             />
           </Box>
         </Group>
@@ -358,7 +358,7 @@ export default function PlayerCard2Mid(props: Props) {
             <Box hiddenFrom="sm">
               <Neighbors
                 neighbors={neighbors || []}
-                colorToFaction={props.colorToFaction}
+                factionColorMap={props.factionColorMap}
               />
             </Box>
           </Stack>
@@ -392,10 +392,10 @@ export default function PlayerCard2Mid(props: Props) {
           hiddenFrom="lg"
         >
           <Stack gap={4}>
-            <PromissoryNotesStack
+            {/* <PromissoryNotesStack
               promissoryNotes={promissoryNotes}
-              colorToFaction={props.colorToFaction}
-            />
+              factionColorMap={props.factionColorMap}
+            /> */}
             {RelicStack}
           </Stack>
         </Grid.Col>
@@ -419,10 +419,10 @@ export default function PlayerCard2Mid(props: Props) {
               secretsScored={secretsScored}
               knownUnscoredSecrets={knownUnscoredSecrets}
             />
-            <PromissoryNotesStack
+            {/* <PromissoryNotesStack
               promissoryNotes={promissoryNotes}
-              colorToFaction={props.colorToFaction}
-            />
+              factionColorMap={props.factionColorMap}
+            /> */}
             {RelicStack}
             {/* Needs to Follow Section */}
             <NeedsToFollow values={unfollowedSCs || []} />
@@ -491,7 +491,7 @@ export default function PlayerCard2Mid(props: Props) {
                   {debtTokens && Object.keys(debtTokens).length > 0 && (
                     <DebtTokens
                       debts={debtTokens}
-                      colorToFaction={props.colorToFaction}
+                      factionColorMap={props.factionColorMap}
                     />
                   )}
                 </Stack>
@@ -554,7 +554,7 @@ export default function PlayerCard2Mid(props: Props) {
                 <Box mt="md">
                   <Nombox
                     capturedUnits={nombox || {}}
-                    factionToColor={props.factionToColor}
+                    factionColorMap={props.factionColorMap}
                   />
                 </Box>
               )}

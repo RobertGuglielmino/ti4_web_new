@@ -10,14 +10,14 @@ import { getColorAlias } from "../../lookup/colors";
 import { PlayerStatsHex, HexagonData } from "./PlayerStatsHex";
 import styles from "./PlayerStatsArea.module.css";
 import { PlayerData } from "@/data/types";
+import { FactionColorMap } from "@/data/enhancePlayerData";
 
 type PlayerStatsAreaProps = {
   faction: string;
   playerData: PlayerData;
   statTilePositions: string[];
-  color: string;
   vpsToWin: number;
-  factionToColor: Record<string, string>;
+  factionColorMap: FactionColorMap;
   ringCount: number;
 };
 
@@ -25,9 +25,8 @@ export function PlayerStatsArea({
   faction,
   playerData,
   statTilePositions,
-  color,
+  factionColorMap,
   vpsToWin,
-  factionToColor,
   ringCount,
 }: PlayerStatsAreaProps) {
   const [hexagons, setHexagons] = useState<HexagonData[]>([]);
@@ -51,7 +50,7 @@ export function PlayerStatsArea({
 
   // Generate border color from player color
   const borderColor = useMemo(() => {
-    const colorData = findColorData(color);
+    const colorData = findColorData(factionColorMap.color);
     if (!colorData) return "rgba(148, 163, 184, 0.8)"; // fallback
 
     const primaryColorValues = getColorValues(
@@ -61,7 +60,7 @@ export function PlayerStatsArea({
     if (!primaryColorValues) return "rgba(148, 163, 184, 0.8)"; // fallback
     const { red, green, blue } = primaryColorValues;
     return `rgba(${red}, ${green}, ${blue}, 0.8)`;
-  }, [color]);
+  }, [factionColorMap.color]);
 
   // Generate background tint based on player status
   const backgroundTint = playerData.active
@@ -213,21 +212,20 @@ export function PlayerStatsArea({
             <Stack gap={0}>
               <CommandTokenStack
                 count={playerData.tacticalCC}
-                colorAlias={getColorAlias(color)}
+                colorAlias={getColorAlias(factionColorMap.color)}
                 faction={faction}
                 type="command"
               />
               <CommandTokenStack
                 count={playerData.fleetCC}
-                colorAlias={getColorAlias(color)}
+                colorAlias={getColorAlias(factionColorMap.color)}
                 faction={faction}
                 type="fleet"
                 mahactEdict={playerData.mahactEdict}
-                factionToColor={factionToColor}
               />
               <CommandTokenStack
                 count={playerData.strategicCC}
-                colorAlias={getColorAlias(color)}
+                colorAlias={getColorAlias(factionColorMap.color)}
                 faction={faction}
                 type="command"
               />

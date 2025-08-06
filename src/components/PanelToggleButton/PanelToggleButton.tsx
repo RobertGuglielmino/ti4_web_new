@@ -1,9 +1,9 @@
 import { Box } from "@mantine/core";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import classes from "./PanelToggleButton.module.css";
+import { useSettingsStore } from "@/utils/dataManagement";
 
 type PanelToggleButtonProps = {
-  isCollapsed: boolean;
   onClick: () => void;
   position: "left" | "right";
   style?: React.CSSProperties;
@@ -11,21 +11,24 @@ type PanelToggleButtonProps = {
 };
 
 export function PanelToggleButton({
-  isCollapsed,
   onClick,
   position,
   style,
   className,
 }: PanelToggleButtonProps) {
+
+  const leftSidebarVisible = useSettingsStore((state) => state.leftSidebarVisible);
+  const rightSidebarVisible = useSettingsStore((state) => state.rightSidebarVisible);
+
   const getToggleIcon = () => {
     if (position === "left") {
-      return isCollapsed ? (
+      return !leftSidebarVisible ? (
         <IconChevronRight size={16} className={classes.toggleIcon} />
       ) : (
         <IconChevronLeft size={16} className={classes.toggleIcon} />
       );
     } else {
-      return isCollapsed ? (
+      return !rightSidebarVisible ? (
         <IconChevronLeft size={16} className={classes.toggleIcon} />
       ) : (
         <IconChevronRight size={16} className={classes.toggleIcon} />
@@ -38,7 +41,7 @@ export function PanelToggleButton({
 
   return (
     <Box
-      className={`${baseClass} ${isCollapsed ? classes.collapsed : ""} ${className || ""}`}
+      className={`${baseClass} ${!rightSidebarVisible ? classes.collapsed : ""} ${className || ""}`}
       onClick={onClick}
       style={style}
     >

@@ -230,11 +230,8 @@ type CardPoolData = {
 
 export type { CardPoolData };
 
-  import { MapTile } from "@/types/global";
-import {
-  TilePosition,
-} from "../mapgen/tilePositioning";
-import { RGBColor } from "../utils/colorOptimization";
+import { MapTile } from "@/types/global";
+import { FactionColorMap } from "./enhancePlayerData";
 
 export type PlayerDataResponse = {
   ringCount: number;
@@ -253,10 +250,8 @@ export type PlayerDataResponse = {
   gameCustomName?: string;
 };
 
-
 export type EnhancedPlayerData = {
   playerData: PlayerData[];
-  mapTiles: MapTile[];
   ringCount: number;
   tileUnitData: Record<string, TileUnitData>;
   tilePositions: string[];
@@ -270,18 +265,15 @@ export type EnhancedPlayerData = {
   gameRound: number;
   gameName: string;
   gameCustomName?: string;
-
-  
-  allExhaustedPlanets: string[];
-  calculatedTilePositions: TilePosition[];
-  systemIdToPosition: Record<string, string>;
-  factionToColor: Record<string, string>;
-  factionControlByTile: Record<string, string>,
-  factionAdjacencyByTile: Record<string, (string | null)[]>,
-  colorToFaction: Record<string, string>;
-  optimizedColors: Record<string, RGBColor>;
+  eData: {
+    planetAttachments: Record<string, string[]>;
+    mapTiles: MapTile[];
+    tilePositions: any;
+    allExhaustedPlanets: string[];
+    systemIdToPosition: Record<string, string>;
+    factionColorMap: FactionColorMap;
+  }
 };
-
 
 export type PlayerData = {
   userName: string;

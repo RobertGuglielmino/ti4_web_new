@@ -21,9 +21,10 @@ import { TileUnitData, LawInPlay } from "@/data/types";
 import { cdnImage } from "../../data/cdnImage";
 import { TILE_HEIGHT, TILE_WIDTH } from "@/mapgen/tilePositioning";
 import { getAttachmentData } from "../../data/attachments";
-import { RGBColor } from "../../utils/colorOptimization";
 import { TileSelectedOverlay } from "./TileSelectedOverlay";
 import { MapTile as MapTileType } from "@/types/global";
+import { useSettingsStore, useStore } from "@/utils/dataManagement";
+import { FactionColorMap } from "@/data/enhancePlayerData";
 
 // Helper function to check if a system has tech skips
 const systemHasTechSkips = (
@@ -72,9 +73,7 @@ const systemHasTechSkips = (
 type Props = {
   mapTile: MapTileType;
   tileUnitData?: TileUnitData;
-  factionAdjacencyControl: (string | null)[],
-  factionToColor: Record<string, string>;
-  optimizedColors: Record<string, RGBColor>;
+  factionColorMap: FactionColorMap;
   style?: React.CSSProperties;
   className?: string;
   onTileSelect?: (systemId: string) => void;
@@ -94,17 +93,9 @@ type Props = {
     y: number
   ) => void;
   onPlanetMouseLeave?: () => void;
-  isSelected?: boolean;
-  isHovered?: boolean;
-  techSkipsMode?: boolean;
-  distanceMode?: boolean;
   selectedTiles?: string[];
-  tileDistance?: number | null;
-  overlaysEnabled?: boolean;
   lawsInPlay?: LawInPlay[];
   exhaustedPlanets?: string[];
-  alwaysShowControlTokens?: boolean;
-  showExhaustedPlanets?: boolean;
   isOnPath?: boolean; // Whether this tile is on any of the calculated paths
 };
 
@@ -112,9 +103,7 @@ export const MapTile = React.memo<Props>(
   ({
     mapTile,
     tileUnitData,
-    factionAdjacencyControl,
-    factionToColor,
-    optimizedColors,
+    factionColorMap,
     style,
     className,
     onTileSelect,
@@ -124,28 +113,33 @@ export const MapTile = React.memo<Props>(
     onUnitSelect,
     onPlanetHover,
     onPlanetMouseLeave,
-    isSelected,
-    isHovered,
-    techSkipsMode,
-    distanceMode,
     selectedTiles,
 
-    overlaysEnabled,
     lawsInPlay,
     exhaustedPlanets = [],
-    alwaysShowControlTokens = true,
-    showExhaustedPlanets = true,
     isOnPath = true, // Default to true so tiles aren't dimmed unless explicitly marked
   }) => {
     const hoverTimeoutRef = React.useRef<Record<string, number>>({});
 
     const ringPosition = mapTile.position;
-    const systemId=mapTile.systemId;
+    const systemId = mapTile.systemId;
     const factionControl = mapTile.controller;
     const position = {
       x: mapTile.properties.x,
       y: mapTile.properties.y
     };
+
+    const selectedArea = useStore((state) => state.selectedArea);
+    const showTechLayer = useSettingsStore((state) => state.settings.techSkipsMode);
+    const showDistanceLayer = useSettingsStore((state) => state.settings.distanceMode);
+    const showControlTokens = useSettingsStore((state) => state.settings.showControlTokens);
+    const showExhaustedPlanets = useSettingsStore((state) => state.settings.showExhaustedPlanets);
+    const enableOverlays = useSettingsStore((state) => state.settings.enableOverlays);
+    const hoveredTile = useSettingsStore((state) => state.settings.hoveredTile);
+    const isHovered = hoveredTile === mapTile.systemId;
+    const isSelected = selectedArea === mapTile.systemId;
+
+
 
     const handlePlanetMouseEnter = React.useCallback(
       (planetId: string, x: number, y: number) => {
@@ -181,9 +175,7 @@ export const MapTile = React.memo<Props>(
       };
     }, []);
 
-    const allEntityPlacements = React.useMemo(() => {
-      return getAllEntityPlacementsForTile(systemId, tileUnitData);
-    }, [systemId, tileUnitData]);
+    const allEntityPlacements = getAllEntityPlacementsForTile(systemId, tileUnitData);
 
     const unitImages: React.ReactElement[] = React.useMemo(() => {
       const planetCoords = getPlanetCoordsBySystemId(systemId);
@@ -199,15 +191,8 @@ export const MapTile = React.memo<Props>(
         return [
           <UnitStack
             key={`${systemId}-${key}-stack`}
-            unitType={stack.entityId}
-            colorAlias={getColorAlias(factionToColor[stack.faction])}
-            faction={stack.faction}
-            count={stack.count}
-            x={stack.x}
-            y={stack.y}
+            stack={stack}
             stackKey={key}
-            sustained={stack.sustained}
-            entityType={stack.entityType}
             planetCenter={planetCenter}
             lawsInPlay={lawsInPlay}
             onUnitMouseOver={
@@ -237,7 +222,7 @@ export const MapTile = React.memo<Props>(
     }, [
       systemId,
       tileUnitData,
-      factionToColor,
+      factionColorMap,
       onUnitMouseOver,
       onUnitMouseLeave,
       onUnitSelect,
@@ -257,7 +242,7 @@ export const MapTile = React.memo<Props>(
           if (!planetData.controlledBy) return [];
 
           // Check if we should show control tokens based on the setting
-          if (!alwaysShowControlTokens) {
+          if (!showControlTokens) {
             // Only show control tokens on planets with no units
             const planetHasUnits = Object.values(allEntityPlacements).some(
               (placement) =>
@@ -282,14 +267,13 @@ export const MapTile = React.memo<Props>(
             y = tokenPlacement.y;
           }
 
-          const colorAlias = getColorAlias(
-            factionToColor[planetData.controlledBy]
-          );
 
           return [
             <ControlToken
               key={`${systemId}-${planetId}-control`}
-              colorAlias={colorAlias}
+              colorAlias={getColorAlias(
+                factionColorMap[planetData.controlledBy].color
+              )}
               faction={planetData.controlledBy}
               style={{
                 position: "absolute",
@@ -305,9 +289,9 @@ export const MapTile = React.memo<Props>(
     }, [
       systemId,
       tileUnitData,
-      factionToColor,
+      factionColorMap,
       allEntityPlacements,
-      alwaysShowControlTokens,
+      showControlTokens,
     ]);
 
     const planetCircles: React.ReactElement[] = React.useMemo(() => {
@@ -432,7 +416,7 @@ export const MapTile = React.memo<Props>(
         <CommandCounterStack
           key={`${systemId}-command-stack`}
           factions={tileUnitData.ccs}
-          factionToColor={factionToColor}
+          factionColorMap={factionColorMap}
           style={{
             position: "absolute",
             left: "0px",
@@ -440,14 +424,14 @@ export const MapTile = React.memo<Props>(
           }}
         />
       );
-    }, [systemId, tileUnitData, factionToColor]);
+    }, [systemId, tileUnitData, factionColorMap]);
 
 
 
 
     const isDistanceSelected =
-      distanceMode && selectedTiles?.includes(systemId);
-    const isDistanceHoverable = distanceMode && !isDistanceSelected;
+      showDistanceLayer && selectedTiles?.includes(systemId);
+    const isDistanceHoverable = showDistanceLayer && !isDistanceSelected;
 
     return (
       <div
@@ -459,13 +443,13 @@ export const MapTile = React.memo<Props>(
           top: `${mapTile.properties.y}px`,
           opacity: (() => {
             // Tech skips mode takes priority
-            if (techSkipsMode) {
+            if (showTechLayer) {
               return systemHasTechSkips(systemId, tileUnitData) ? 1.0 : 0.2;
             }
 
             // Distance mode with two selected tiles - dim tiles not on any path
             if (
-              distanceMode &&
+              showDistanceLayer &&
               selectedTiles &&
               selectedTiles.length === 2 &&
               !isOnPath
@@ -512,18 +496,17 @@ export const MapTile = React.memo<Props>(
           {commandCounterStack}
           <div className={classes.ringPosition}>{ringPosition}</div>
 
-          {factionControl && overlaysEnabled && (
+          {factionControl && enableOverlays && (
             <FactionColorOverlay
-              faction={factionToColor[factionControl]}
               opacity={0.3}
-              optimizedColors={optimizedColors}
+              optimizedColors={factionColorMap[mapTile.controller].optimizedColor}
             />
           )}
 
           <TileSelectedOverlay
             isSelected={!!isDistanceSelected}
             isHovered={!!isHovered}
-            isDistanceMode={!!distanceMode}
+            isDistanceMode={!!showDistanceLayer}
           />
         </div>
       </div>

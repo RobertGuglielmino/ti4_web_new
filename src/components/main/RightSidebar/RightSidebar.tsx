@@ -4,9 +4,9 @@ import { FactionTabBar } from "../../FactionTabBar";
 import { PlayerCardDisplay } from "../PlayerCardDisplay";
 import { AreaType } from "../../../hooks/useTabsAndTooltips";
 import classes from "../../MapUI.module.css";
+import { useSettingsStore } from "@/utils/dataManagement";
 
 type RightSidebarProps = {
-  isRightPanelCollapsed: boolean;
   sidebarWidth: number;
   enhancedData: any;
   selectedArea: AreaType;
@@ -20,7 +20,6 @@ type RightSidebarProps = {
 };
 
 export function RightSidebar({
-  isRightPanelCollapsed,
   sidebarWidth,
   enhancedData,
   selectedArea,
@@ -40,11 +39,14 @@ export function RightSidebar({
     isError,
   } = enhancedData || {};
 
+  
+  const rightPanelCollapsed = useSettingsStore((state) => state.settings.rightPanelCollapsed);
+
   return (
     <Box
-      className={`${classes.sidebar} ${isRightPanelCollapsed ? classes.collapsedRight : ""}`}
+      className={`${classes.sidebar} ${rightPanelCollapsed ? classes.collapsedRight : ""}`}
       style={{
-        width: isRightPanelCollapsed ? "0%" : `${sidebarWidth}%`,
+        width: rightPanelCollapsed ? "0%" : `${sidebarWidth}%`,
       }}
     >
       {playerData && (

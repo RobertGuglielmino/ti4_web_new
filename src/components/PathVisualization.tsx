@@ -6,13 +6,12 @@ import {
   calculatePathPoints,
 } from "../utils/pathVisualization";
 import classes from "./PathVisualization.module.css";
+import { useSettingsStore, useStore } from "@/utils/dataManagement";
 
 type PathVisualizationProps = {
   pathResult: PathResult | null;
   systemIdToPosition: Record<string, string>;
   tilePositions: TilePosition[];
-  zoom: number;
-  mapPadding: number;
   activePathIndex: number;
   onPathIndexChange: (index: number) => void;
 };
@@ -45,12 +44,14 @@ export const PathVisualization = ({
   pathResult,
   systemIdToPosition,
   tilePositions,
-  zoom,
-  mapPadding,
   activePathIndex,
   onPathIndexChange,
 }: PathVisualizationProps) => {
   if (!pathResult?.paths.length) return null;
+
+  
+    const zoom = useSettingsStore((state) => state.settings.zoomLevel);
+    const mapPadding = useStore((state) => state.mapPadding);
 
   const positionMap = useMemo(
     () => createPositionMap(tilePositions),
