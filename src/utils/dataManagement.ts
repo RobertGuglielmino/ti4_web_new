@@ -1,6 +1,11 @@
-import { TooltipUnit } from "@/components/main/MapUnitDetailsCard";
 import { create } from "zustand";
 
+
+export type TooltipUnit = {
+  unitId?: string;
+  faction: string;
+  coords: { x: number; y: number };
+};
 
 export type TooltipPlanet = {
   systemId: string;
@@ -9,6 +14,8 @@ export type TooltipPlanet = {
 };
 
 type Store = {
+  hoveredTile: string;
+  zoomLevel: number;
   tooltipUnit: TooltipUnit | null;
   tooltipPlanet: TooltipPlanet | null;
   selectedArea: string | null;
@@ -24,7 +31,9 @@ type Store = {
   setTooltipPlanet: (planet: TooltipPlanet | null) => void;
 };
 
-export const useStore = create<Store>((set) => ({
+export const useAppStore = create<Store>((set) => ({
+  hoveredTile: "",
+  zoomLevel: 100,
   selectedArea: "",
   activeArea: "",
   selectedFacion: "",
@@ -43,6 +52,21 @@ export const useStore = create<Store>((set) => ({
   },
   mapPadding: 200,
 
+  setHoveredTile: (id: string) =>
+    set((state) => ({
+      ...state,
+        hoveredTile: id,
+    })),
+  clearHoveredTile: () =>
+    set((state) => ({
+      ...state,
+        hoveredTile: "",
+    })),
+  setZoomLevel: (level: number) =>
+    set((state) => ({
+      ...state,
+        zoomLevel: level,
+    })),
   setSelectedArea: (area: string) =>
     set((state) => ({
       ...state,
@@ -77,8 +101,6 @@ export const useStore = create<Store>((set) => ({
 
 
 export type Settings = {
-  hoveredTile: string;
-  zoomLevel: number;
   isFirefox: boolean;
   settingsModalOpened: boolean;
   keyboardShortcutsModalOpened: boolean;
@@ -99,9 +121,6 @@ type SettingsStore = {
 
   // Actions
   updateSettings: (updates: Partial<Settings>) => void;
-  setHoveredTile: (id: string) => void;
-  clearHoveredTile: () => void;
-  setZoomLevel: (level: number) => void;
   setSettingsModalOpened: (opened: boolean) => void;
   setKeyboardShortcutsModalOpened: (opened: boolean) => void;
   toggleLeftPanelCollapsed: () => void;
@@ -129,8 +148,6 @@ type SettingsStore = {
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
   settings: {
-    hoveredTile: "",
-    zoomLevel: 100,
     isFirefox: typeof navigator !== "undefined" &&
       navigator.userAgent.toLowerCase().indexOf("firefox") > -1,
     settingsModalOpened: false,
@@ -155,30 +172,6 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         ...updates,
       },
     })),
-  setHoveredTile: (id: string) =>
-    set((state) => ({
-      ...state,
-      settings: {
-        ...state.settings,
-        hoveredTile: id,
-      },
-    })),
-  clearHoveredTile: () =>
-    set((state) => ({
-      ...state,
-      settings: {
-        ...state.settings,
-        hoveredTile: "",
-      },
-    })),
-  setZoomLevel: (level: number) =>
-    set((state) => ({
-      ...state,
-      settings: {
-        ...state.settings,
-        zoomLevel: level,
-      },
-    })),
   setSettingsModalOpened: (opened: boolean) =>
     set((state) => ({
       ...state,
@@ -187,8 +180,6 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         settingsModalOpened: opened,
       },
     })),
-
-    
   setKeyboardShortcutsModalOpened: (opened: boolean) =>
     set((state) => ({
       ...state,
@@ -273,8 +264,6 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
 
 const STORAGE_KEY = "ti4_settings";
 const DEFAULT_SETTINGS = {
-  hoveredTile: "",
-  zoomLevel: 100,
   isFirefox: false,
   settingsModalOpened: false,
   keyboardShortcutsModalOpened: false,

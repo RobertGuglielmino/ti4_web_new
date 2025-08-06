@@ -23,7 +23,7 @@ import { TILE_HEIGHT, TILE_WIDTH } from "@/mapgen/tilePositioning";
 import { getAttachmentData } from "../../data/attachments";
 import { TileSelectedOverlay } from "./TileSelectedOverlay";
 import { MapTile as MapTileType } from "@/types/global";
-import { useSettingsStore, useStore } from "@/utils/dataManagement";
+import { useSettingsStore, useAppStore } from "@/utils/dataManagement";
 import { FactionColorMap } from "@/data/enhancePlayerData";
 
 // Helper function to check if a system has tech skips
@@ -129,7 +129,7 @@ export const MapTile = React.memo<Props>(
       y: mapTile.properties.y
     };
 
-    const selectedArea = useStore((state) => state.selectedArea);
+    const selectedArea = useAppStore((state) => state.selectedArea);
     const showTechLayer = useSettingsStore((state) => state.settings.techSkipsMode);
     const showDistanceLayer = useSettingsStore((state) => state.settings.distanceMode);
     const showControlTokens = useSettingsStore((state) => state.settings.showControlTokens);

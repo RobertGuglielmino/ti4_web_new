@@ -59,7 +59,7 @@ import { useDistanceRendering } from "./hooks/useDistanceRendering";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
 import { useTabManagementNewUI } from "./hooks/useTabManagementNewUI";
-import { useSettingsStore, useStore } from "./utils/dataManagement";
+import { useSettingsStore, useAppStore } from "./utils/dataManagement";
 import { useZoom } from "./hooks/useZoom";
 
 // Magic constant for required version schema
@@ -152,10 +152,10 @@ function NewMapUIContent() {
   const data = enhancedData;
 
 
-  const mapPadding = useStore((state) => state.mapPadding);
+  const mapPadding = useAppStore((state) => state.mapPadding);
   // const zoom = useSettingsStore((state) => state.settings.zoomLevel);
-  const tooltipPlanet = useStore((state) => state.tooltipPlanet);
-  const setTooltipPlanet = useStore((state) => state.setTooltipPlanet);
+  const tooltipPlanet = useAppStore((state) => state.tooltipPlanet);
+  const setTooltipPlanet = useAppStore((state) => state.setTooltipPlanet);
   
   const isFirefox = useSettingsStore((state) => state.settings.isFirefox);
   const techSkipsMode = useSettingsStore((state) => state.settings.techSkipsMode);

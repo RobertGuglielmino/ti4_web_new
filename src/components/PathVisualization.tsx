@@ -6,7 +6,7 @@ import {
   calculatePathPoints,
 } from "../utils/pathVisualization";
 import classes from "./PathVisualization.module.css";
-import { useSettingsStore, useStore } from "@/utils/dataManagement";
+import { useSettingsStore, useAppStore } from "@/utils/dataManagement";
 
 type PathVisualizationProps = {
   pathResult: PathResult | null;
@@ -51,7 +51,7 @@ export const PathVisualization = ({
 
   
     const zoom = useSettingsStore((state) => state.settings.zoomLevel);
-    const mapPadding = useStore((state) => state.mapPadding);
+    const mapPadding = useAppStore((state) => state.mapPadding);
 
   const positionMap = useMemo(
     () => createPositionMap(tilePositions),
