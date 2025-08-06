@@ -134,18 +134,6 @@ type SettingsStore = {
   toggleShowExhaustedPlanets: () => void;
 };
 
-
-  // setSettingsModalOpened: (opened: boolean) =>
-  //   set((state) => ({
-  //     ...state,
-  //     settings: {
-  //       ...state.settings,
-  //       settingsModalOpened: opened,
-  //     },
-  //   }))
-  // setSettingsModalOpened: (opened: boolean) =>
-  //   set(stateUpdator(keyof typeof SettingsStore, opened)),
-
 export const useSettingsStore = create<SettingsStore>((set) => ({
   settings: {
     isFirefox: typeof navigator !== "undefined" &&
